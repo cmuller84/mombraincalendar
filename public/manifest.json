@@ -1,0 +1,17 @@
+{
+  "name": "Mom Brain Calendar",
+  "short_name": "Family Cal",
+  "description": "AI-powered shared family calendar for busy parents.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#7c4dff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

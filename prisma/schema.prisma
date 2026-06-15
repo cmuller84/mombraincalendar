@@ -1,0 +1,96 @@
+// Mom Brain Calendar — data model
+// A shared family calendar with AI event entry and reminders that actually reach you.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A family member. Adults can have logins + their own devices/phones;
+/// kids can simply be people that events get assigned to.
+model Person {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#7c4dff") // used to color-code events on the calendar
+  isAdult   Boolean  @default(true)
+  phone     String? // E.164 (e.g. +12165551234) for SMS reminders
+  createdAt DateTime @default(now())
+
+  assignments       EventAssignee[]
+  pushSubscriptions PushSubscription[]
+  reminderDeliveries ReminderDelivery[]
+}
+
+/// A single calendar event on the shared family calendar.
+model Event {
+  id        String   @id @default(cuid())
+  title     String
+  start     DateTime
+  end       DateTime?
+  allDay    Boolean  @default(false)
+  location  String?
+  notes     String?
+  // Free-text echo of what the user originally typed/said, for transparency.
+  sourceText String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignees EventAssignee[]
+  reminders Reminder[]
+}
+
+/// Join table: which people an event is "dispatched" to.
+model EventAssignee {
+  id       String @id @default(cuid())
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId String
+
+  @@unique([eventId, personId])
+}
+
+/// A scheduled heads-up for an event, e.g. "1 week before".
+model Reminder {
+  id           String   @id @default(cuid())
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId      String
+  // How far before the event this reminder fires.
+  offsetMinutes Int
+  // The absolute moment this reminder should be sent (start - offset).
+  fireAt       DateTime
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  deliveries ReminderDelivery[]
+
+  @@index([fireAt, sentAt])
+}
+
+/// Record of an actual notification sent to a person for a reminder.
+model ReminderDelivery {
+  id         String   @id @default(cuid())
+  reminder   Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  reminderId String
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId   String
+  channel    String // "push" | "sms"
+  status     String // "sent" | "failed" | "skipped"
+  detail     String?
+  createdAt  DateTime @default(now())
+}
+
+/// A browser Web Push subscription belonging to a person/device.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId  String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
