@@ -131,6 +131,9 @@ function findTime(text: string): { hour: number; minute: number } | null {
 /** Strip date/time/reminder words to leave a reasonable title. */
 function deriveTitle(text: string): string {
   let t = text
+    // Drop trailing reminder clauses entirely: ", remind us a week before" etc.
+    .replace(/[,.;]?\s*\bremind(er)?\b.*$/i, "")
+    .replace(/[,.;]?\s*\b(a|one|two|\d+)\s+(week|day|hour|minute)s?\s+(before|ahead|out|prior)\b.*$/i, "")
     .replace(/\b(remind me to|remind me|add|schedule|put|create|set up|book)\b/gi, "")
     .replace(/\b(on|at|this|next|the)\b/gi, " ")
     .replace(/\btomorrow|today|tonight\b/gi, "")
